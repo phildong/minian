@@ -1514,7 +1514,7 @@ def label_connected(adj: np.ndarray, only_connected=False) -> np.ndarray:
         adj = np.triu(adj)
         g = nx.convert_matrix.from_numpy_matrix(adj)
     except:
-        g = nx.convert_matrix.from_scipy_sparse_matrix(adj)
+        g = nx.convert_matrix.from_scipy_sparse_array(adj)
     labels = np.zeros(adj.shape[0], dtype=np.int)
     for icomp, comp in enumerate(nx.connected_components(g)):
         comp = list(comp)

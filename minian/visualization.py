@@ -43,6 +43,8 @@ from .cnmf import compute_AtC
 from .motion_correction import apply_shifts
 from .utilities import custom_arr_optimize, rechunk_like
 
+hv.extension("bokeh")
+
 
 class VArrayViewer:
     """
@@ -1914,13 +1916,10 @@ def visualize_spatial_update(
         lambda cr: cr.opts(frame_width=500, frame_height=50),
         hv.RGB if datashading else hv.Curve,
     )
-    return (
-        hv.NdLayout(
-            {"pseudo-color": (hv_pts * hv_A), "binary": (hv_pts * hv_Ab)},
-            kdims="Spatial Matrix",
-        ).cols(1)
-        + hv_C.relabel("Temporal Components")
-    )
+    return hv.NdLayout(
+        {"pseudo-color": (hv_pts * hv_A), "binary": (hv_pts * hv_Ab)},
+        kdims="Spatial Matrix",
+    ).cols(1) + hv_C.relabel("Temporal Components")
 
 
 def visualize_temporal_update(
@@ -2124,7 +2123,7 @@ def NNsort(cents: pd.DataFrame) -> pd.Series:
         result.loc[idu_next] = NNord
         remain_list.remove(idu_next)
         for k in range(1, int(np.ceil(np.log2(len(result)))) + 1):
-            qry = kdtree.query(cents_hw.loc[idu_next], 2 ** k)
+            qry = kdtree.query(cents_hw.loc[idu_next], 2**k)
             NNs = qry[1][np.isfinite(qry[0])].squeeze()
             NNs = NNs[np.sort(np.unique(NNs, return_index=True)[1])]
             NNs = np.array(result.iloc[NNs].index)
@@ -2195,3 +2194,27 @@ def visualize_motion(motion: xr.DataArray) -> Union[hv.Layout, hv.NdOverlay]:
                 height=hv.Curve(motion.sel(shift_dim="height")).opts(**opts_cv),
             )
         )
+
+
+def plotA_contour(A: xr.DataArray, im: xr.DataArray, cmap=None, im_opts=None):
+    im = hv.Image(im, ["width", "height"])
+    if im_opts is not None:
+        im = im.opts(**im_opts)
+    im = im * hv.Path([])
+    for uid in A.coords["unit_id"].values:
+        curA = (np.array(A.sel(unit_id=uid)) > 0).astype(np.uint8)
+        try:
+            cnt = cv2.findContours(curA, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[0][
+                0
+            ].squeeze()
+        except IndexError:
+            continue
+        if cnt.ndim > 1:
+            cnt_scale = np.zeros_like(cnt)
+            cnt_scale[:, 0] = A.coords["width"][cnt[:, 0]]
+            cnt_scale[:, 1] = A.coords["height"][cnt[:, 1]]
+            pth = hv.Path(cnt_scale.squeeze())
+            if cmap is not None:
+                pth = pth.opts(color=cmap[uid])
+            im = im * pth
+    return im

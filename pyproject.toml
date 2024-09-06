@@ -39,7 +39,7 @@ authors = [
 dependencies = [
     "bokeh",
     "cvxpy",
-    "dask",
+    "dask[complete]",
     "datashader",
     "distributed",
     "ecos",

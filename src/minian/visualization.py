@@ -23,15 +23,8 @@ from bokeh.palettes import Category10_10, Viridis256
 from dask.diagnostics import ProgressBar
 from datashader import count_cat
 from holoviews.operation.datashader import datashade, dynspread
-from holoviews.streams import (
-    BoxEdit,
-    DoubleTap,
-    Pipe,
-    RangeXY,
-    Selection1D,
-    Stream,
-    Tap,
-)
+from holoviews.streams import (BoxEdit, DoubleTap, Pipe, RangeXY, Selection1D,
+                               Stream, Tap)
 from holoviews.util import Dynamic
 from matplotlib import cm
 from panel import widgets as pnwgt
@@ -1997,7 +1990,7 @@ def visualize_temporal_update(
         inputs = [dict(dummy=i) for i in inputs]
         A_dict = dict(dummy=A_dict)
     input_dict = {k: [i[k] for i in inputs] for k in inputs[0].keys()}
-    hv_YA, hv_C, hv_S, hv_sig, hv_C_pul, hv_S_pul, hv_A = [dict() for _ in range(7)]
+    hv_YA, hv_C, hv_S, hv_sig, hv_C_pul, hv_S_pul, hv_A = (dict() for _ in range(7))
     for k, ins in input_dict.items():
         if norm:
             ins[:-1] = [
@@ -2039,22 +2032,22 @@ def visualize_temporal_update(
             f_crd.min(),
             int(np.around(f_crd.min() + (f_crd.max() - f_crd.min()) / 2)),
         )
-        hv_S_pul[k], hv_C_pul[k] = [
+        hv_S_pul[k], hv_C_pul[k] = (
             (hv.Dataset(tr.rename("Response (A.U.)")).to(hv.Curve, kdims=["t"]))
             for tr in [s_pul, c_pul]
-        ]
+        )
         hv_YA[k] = hv.Dataset(ya.rename("Intensity (A.U.)")).to(
             hv.Curve, kdims=["frame"]
         )
         if c.sizes["unit_id"] > 0:
-            hv_C[k], hv_S[k], hv_sig[k] = [
+            hv_C[k], hv_S[k], hv_sig[k] = (
                 (
                     hv.Dataset(tr.rename("Intensity (A.U.)")).to(
                         hv.Curve, kdims=["frame"]
                     )
                 )
                 for tr in [c, s, sig]
-            ]
+            )
         hv_A[k] = hv.Dataset(A_dict[k].rename("A")).to(
             hv.Image, kdims=["width", "height"]
         )

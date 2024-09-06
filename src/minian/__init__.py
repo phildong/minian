@@ -1,5 +1,7 @@
-import dask as da
 import os
+
+import dask as da
+
 from .utilities import custom_arr_optimize, custom_delay_optimize
 
 __version__ = "1.2.1"
@@ -15,7 +17,7 @@ da.config.set(
         "distributed.worker.memory.pause": 0.9,
         "distributed.worker.memory.terminate": 0.95,
         "distributed.admin.log-length": 100,
-        "distributed.scheduler.transition-log-length": 100,
+        "distributed.admin.low-level-log-length": 100,
         "optimization.fuse.ave-width": 3,
         # "optimization.fuse.subgraphs": False,
         # "distributed.scheduler.allowed-failures": 1,

@@ -2,13 +2,13 @@ import os
 
 import dask as da
 
-from .utilities import custom_arr_optimize, custom_delay_optimize
+# from .utilities import custom_arr_optimize, custom_delay_optimize
 
 __version__ = "1.2.1"
 
-da.config.set(
-    array_optimize=custom_arr_optimize, delayed_optimize=custom_delay_optimize
-)
+# da.config.set(
+#     array_optimize=custom_arr_optimize, delayed_optimize=custom_delay_optimize
+# )
 # setting fuse width ref: https://github.com/dask/dask/issues/5105
 da.config.set(
     **{

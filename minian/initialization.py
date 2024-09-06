@@ -29,7 +29,7 @@ def seeds_init(
     method="rolling",
     stp_size=200,
     nchunk=100,
-    max_wnd=10,
+    max_wnd=(2, 10),
     diff_thres=2,
 ):
     """
@@ -61,10 +61,10 @@ def seeds_init(
     nchunk : int, optional
         Number of chunks to sample randomly. Only used if `method is "random"`.
         By default `100`.
-    max_wnd : int, optional
+    max_wnd : tuple, optional
         Radius (in pixels) of the disk window used for computing local maxima.
         Local maximas are defined as pixels with maximum intensity in such a
-        window. By default `10`.
+        window. By default `(2, 10)`.
     diff_thres : int, optional
         Intensity threshold for the difference between local maxima and its
         neighbours. Any local maxima that is not birghter than its neighbor
@@ -110,7 +110,7 @@ def seeds_init(
         vectorize=True,
         dask="parallelized",
         output_dtypes=[np.uint8],
-        kwargs=dict(k0=2, k1=max_wnd, diff=diff_thres),
+        kwargs=dict(k0=max_wnd[0], k1=max_wnd[1], diff=diff_thres),
     ).sum("sample")
     seeds = (
         loc_max.where(loc_max > 0).rename("seeds").to_dataframe().dropna().reset_index()

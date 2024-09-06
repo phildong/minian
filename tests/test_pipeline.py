@@ -52,8 +52,8 @@ def test_pipeline():
         dashboard_address="0.0.0.0:12345",
         local_directory=".",
     )
-    annt_plugin = TaskAnnotation()
-    cluster.scheduler.add_plugin(annt_plugin)
+    # annt_plugin = TaskAnnotation()
+    # cluster.scheduler.add_plugin(annt_plugin)
     client = Client(cluster)
     # load parameters
     with open("./default_params.yaml") as yf:

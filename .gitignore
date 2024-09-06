@@ -134,3 +134,6 @@ build_artifacts
 
 # minian intermediate
 minian_intermediate
+
+# pdm stuff
+.pdm-python

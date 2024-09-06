@@ -10,6 +10,7 @@ import numpy as np
 import SimpleITK as sitk
 import xarray as xr
 from skimage.registration import phase_cross_correlation
+from scipy.interpolate import interp1d
 
 from .utilities import custom_arr_optimize, xrconcat_recursive
 
@@ -809,3 +810,16 @@ def get_mesh_size(fm: np.ndarray) -> np.ndarray:
         The auto determined mesh size.
     """
     return (int(np.around(fm.shape[0] / 100)), int(np.around(fm.shape[1] / 100)))
+
+
+def resample_motion(motion, nsmp=None, f_org=None, f_new=None):
+    if f_org is None:
+        f_org = np.linspace(0, 1, motion.shape[0], endpoint=True)
+    if f_new is None:
+        f_new = np.linspace(0, 1, nsmp, endpoint=True)
+    motion_ret = np.zeros((len(f_new), 2))
+    for i in range(2):
+        motion_ret[:, i] = interp1d(
+            f_org, motion[:, i], bounds_error=False, fill_value="extrapolate"
+        )(f_new)
+    return motion_ret

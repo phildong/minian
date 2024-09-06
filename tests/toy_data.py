@@ -29,7 +29,7 @@ def gauss_cell(
             break  # ensure cov is positive definite
     # generate samples of coordinates
     crds = np.clip(
-        np.round(random.multivariate_normal(cent, cov, size=nsamp)).astype(np.int),
+        np.round(random.multivariate_normal(cent, cov, size=nsamp)).astype(int),
         0,
         None,
     )

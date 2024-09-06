@@ -84,7 +84,7 @@ def get_noise_fft(
         kwargs=dict(
             noise_range=noise_range, noise_method=noise_method, threads=threads
         ),
-        output_dtypes=[np.float],
+        output_dtypes=[float],
     )
     return sn
 
@@ -1515,7 +1515,7 @@ def label_connected(adj: np.ndarray, only_connected=False) -> np.ndarray:
         g = nx.convert_matrix.from_numpy_matrix(adj)
     except:
         g = nx.convert_matrix.from_scipy_sparse_array(adj)
-    labels = np.zeros(adj.shape[0], dtype=np.int)
+    labels = np.zeros(adj.shape[0], dtype=int)
     for icomp, comp in enumerate(nx.connected_components(g)):
         comp = list(comp)
         if only_connected and len(comp) == 1:

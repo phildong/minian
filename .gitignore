@@ -120,6 +120,7 @@ demo_movies/minian
 
 # dask worker space
 dask-worker-space
+dask-scratch-space
 
 # history
 .history

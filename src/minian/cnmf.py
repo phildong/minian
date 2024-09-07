@@ -385,7 +385,7 @@ def update_spatial(
                     cur_sub,
                     C_store=C_store,
                     f=f_in,
-                )
+                ).map_blocks(sparse.COO)
             else:
                 cur_blk = darr.array(sparse.zeros(cur_sub.shape))
             A_new[hblk, wblk, 0] = cur_blk

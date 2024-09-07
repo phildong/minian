@@ -23,8 +23,15 @@ from bokeh.palettes import Category10_10, Viridis256
 from dask.diagnostics import ProgressBar
 from datashader import count_cat
 from holoviews.operation.datashader import datashade, dynspread
-from holoviews.streams import (BoxEdit, DoubleTap, Pipe, RangeXY, Selection1D,
-                               Stream, Tap)
+from holoviews.streams import (
+    BoxEdit,
+    DoubleTap,
+    Pipe,
+    RangeXY,
+    Selection1D,
+    Stream,
+    Tap,
+)
 from holoviews.util import Dynamic
 from matplotlib import cm
 from panel import widgets as pnwgt
@@ -1658,20 +1665,16 @@ def visualize_preprocess(
     fh, fw = fm.sizes["height"], fm.sizes["width"]
     asp = fw / fh
     opts_im = {
-        "plot": {
-            "frame_width": 500,
-            "aspect": asp,
-            "title": "Image {label} {group} {dimensions}",
-        },
-        "style": {"cmap": "viridis"},
+        "frame_width": 500,
+        "aspect": asp,
+        "title": "Image {label} {group} {dimensions}",
+        "cmap": "viridis",
     }
     opts_cnt = {
-        "plot": {
-            "frame_width": 500,
-            "aspect": asp,
-            "title": "Contours {label} {group} {dimensions}",
-        },
-        "style": {"cmap": "viridis"},
+        "frame_width": 500,
+        "aspect": asp,
+        "title": "Contours {label} {group} {dimensions}",
+        "cmap": "viridis",
     }
 
     def _vis(f):
@@ -1745,17 +1748,17 @@ def visualize_seeds(
     h, w = max_proj.sizes["height"], max_proj.sizes["width"]
     asp = w / h
     pt_cmap = {True: "white", False: "red"}
-    opts_im = dict(plot=dict(frame_width=600, aspect=asp), style=dict(cmap="Viridis"))
-    opts_pts = dict(
-        plot=dict(
-            frame_width=600,
-            aspect=asp,
-            size_index="seeds",
-            color_index=mask,
-            tools=["hover"],
-        ),
-        style=dict(fill_alpha=0.8, line_alpha=0, cmap=pt_cmap),
-    )
+    opts_im = {"frame_width": 600, "aspect": asp, "cmap": "viridis"}
+    opts_pts = {
+        "frame_width": 600,
+        "aspect": asp,
+        "size_index": "seeds",
+        "color_index": mask,
+        "tools": ["hover"],
+        "fill_alpha": 0.8,
+        "line_alpha": 0,
+        "cmap": pt_cmap,
+    }
     if mask:
         vdims = ["seeds", mask]
     else:

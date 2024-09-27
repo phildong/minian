@@ -9,8 +9,8 @@ import dask.array as darr
 import numpy as np
 import SimpleITK as sitk
 import xarray as xr
-from skimage.registration import phase_cross_correlation
 from scipy.interpolate import interp1d
+from skimage.registration import phase_cross_correlation
 
 from .utilities import custom_arr_optimize, xrconcat_recursive
 
@@ -125,7 +125,7 @@ def estimate_motion(
         for overview of the non-rigid estimation method
     """
     varr = varr.transpose(..., dim, "height", "width")
-    loop_dims = list(set(varr.dims) - set(["height", "width", dim]))
+    loop_dims = list(set(varr.dims) - {"height", "width", dim})
     if npart is None:
         # by default use a npart that result in two layers of recursion
         npart = max(3, int(np.ceil((varr.sizes[dim] / chunk_nfm) ** (1 / 2))))
@@ -516,12 +516,7 @@ def est_motion_perframe(
     --------
     estimate_motion : for detailed explanation of parameters
     """
-    sh = phase_cross_correlation(
-        src,
-        dst,
-        upsample_factor=upsample,
-        return_error=False,
-    )
+    sh, _, _ = phase_cross_correlation(src, dst, upsample_factor=upsample)
     if mesh_size is None:
         return -sh
     src = sitk.GetImageFromArray(src.astype(np.float32))
@@ -618,7 +613,7 @@ def check_temp(fm: np.ndarray, max_sh: int) -> float:
     if perimeter <= 0:
         return 0
     area = cv2.contourArea(cont)
-    circularity = 4 * np.pi * (area / (perimeter ** 2))
+    circularity = 4 * np.pi * (area / (perimeter**2))
     return circularity
 
 

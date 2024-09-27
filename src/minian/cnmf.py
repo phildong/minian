@@ -29,10 +29,10 @@ from statsmodels.tsa.stattools import acovf
 from .utilities import (
     custom_arr_optimize,
     custom_delay_optimize,
+    med_baseline,
     open_minian,
     rechunk_like,
     save_minian,
-    med_baseline,
 )
 
 
@@ -84,7 +84,7 @@ def get_noise_fft(
         kwargs=dict(
             noise_range=noise_range, noise_method=noise_method, threads=threads
         ),
-        output_dtypes=[np.float],
+        output_dtypes=[float],
     )
     return sn
 
@@ -317,15 +317,15 @@ def update_spatial(
 
     .. math::
         \\begin{aligned}
-        & \\underset{\mathbf{a}}{\\text{minimize}}
-        & & \\left \\lVert \mathbf{y} - \mathbf{a}^T \mathbf{C} \\right \\rVert
-        ^2 + \\alpha \\left \\lvert \mathbf{a} \\right \\rvert \\\\
-        & \\text{subject to} & & \mathbf{a} \geq 0
+        & \\underset{\\mathbf{a}}{\\text{minimize}}
+        & & \\left \\lVert \\mathbf{y} - \\mathbf{a}^T \\mathbf{C} \\right \\rVert
+        ^2 + \\alpha \\left \\lvert \\mathbf{a} \\right \\rvert \\\\
+        & \\text{subject to} & & \\mathbf{a} \\geq 0
         \\end{aligned}
 
-    Where :math:`\mathbf{y}` is the fluorescent dynamic of the pixel,
-    :math:`\mathbf{a}` is spatial footprint values across all cells on that
-    pixel, :math:`\mathbf{C}` is temporal component matrix across all cells. The
+    Where :math:`\\mathbf{y}` is the fluorescent dynamic of the pixel,
+    :math:`\\mathbf{a}` is spatial footprint values across all cells on that
+    pixel, :math:`\\mathbf{C}` is temporal component matrix across all cells. The
     parameter :math:`\\alpha` is the product of the noise level on each pixel
     `sn` and the global scalar `sparse_penal`. Higher value of :math:`\\alpha`
     will result in more sparse estimation of spatial footprints.
@@ -385,9 +385,9 @@ def update_spatial(
                     cur_sub,
                     C_store=C_store,
                     f=f_in,
-                )
+                ).map_blocks(sparse.COO)
             else:
-                cur_blk = darr.array(sparse.zeros((cur_sub.shape)))
+                cur_blk = darr.array(sparse.zeros(cur_sub.shape))
             A_new[hblk, wblk, 0] = cur_blk
         A_new = darr.block(A_new.tolist())
     else:
@@ -623,7 +623,7 @@ def compute_trace(
     f = f.fillna(0).data.reshape((-1, 1))
     AtA = darr.tensordot(A, A, axes=[(1, 2), (1, 2)]).compute()
     A_norm = (
-        (1 / (A ** 2).sum(axis=(1, 2)))
+        (1 / (A**2).sum(axis=(1, 2)))
         .map_blocks(
             lambda a: sparse.diagonalize(sparse.COO(a)), chunks=(A.shape[0], A.shape[0])
         )
@@ -827,23 +827,23 @@ def update_temporal(
 
     .. math::
         \\begin{aligned}
-        & \\underset{\mathbf{c} \, \mathbf{b_0} \,
-        \mathbf{c_0}}{\\text{minimize}}
-        & & \\left \\lVert \mathbf{y} - \mathbf{c} - \mathbf{c_0} -
-        \mathbf{b_0} \\right \\rVert ^2 + \\alpha \\left \\lvert \mathbf{G}
-        \mathbf{c} \\right \\rvert \\\\
+        & \\underset{\\mathbf{c} \\, \\mathbf{b_0} \\,
+        \\mathbf{c_0}}{\\text{minimize}}
+        & & \\left \\lVert \\mathbf{y} - \\mathbf{c} - \\mathbf{c_0} -
+        \\mathbf{b_0} \\right \\rVert ^2 + \\alpha \\left \\lvert \\mathbf{G}
+        \\mathbf{c} \\right \\rvert \\\\
         & \\text{subject to}
-        & & \mathbf{c} \geq 0, \; \mathbf{G} \mathbf{c} \geq 0 
+        & & \\mathbf{c} \\geq 0, \\; \\mathbf{G} \\mathbf{c} \\geq 0 
         \\end{aligned}
 
-    Where :math:`\mathbf{y}` is the estimated residule trace (`YrA`) for the
-    cell, :math:`\mathbf{c}` is the calcium dynamic of the cell,
-    :math:`\mathbf{G}` is a "frame"x"frame" matrix constructed from the
+    Where :math:`\\mathbf{y}` is the estimated residule trace (`YrA`) for the
+    cell, :math:`\\mathbf{c}` is the calcium dynamic of the cell,
+    :math:`\\mathbf{G}` is a "frame"x"frame" matrix constructed from the
     estimated AR coefficients of cell, such that the deconvolved spikes of the
-    cell is given by :math:`\mathbf{G}\mathbf{c}`. If `bseg is None`, then
-    :math:`\mathbf{b_0}` is a single scalar, otherwise it is a 1d vector with
+    cell is given by :math:`\\mathbf{G}\\mathbf{c}`. If `bseg is None`, then
+    :math:`\\mathbf{b_0}` is a single scalar, otherwise it is a 1d vector with
     dimension "frame" constrained to have multiple independent values, each
-    corresponding to a segment of time specified in `bseg`. :math:`\mathbf{c_0}`
+    corresponding to a segment of time specified in `bseg`. :math:`\\mathbf{c_0}`
     is a 1d vector with dimension "frame" constrained to be the product of a
     scalar (representing initial calcium concentration) and the decay dynamic
     given by the estimated AR coefficients. The parameter :math:`\\alpha` is the
@@ -1066,7 +1066,7 @@ def get_ar_coef(
     else:
         max_lag = p + add_lag
     cov = acovf(y, fft=True)
-    C_mat = toeplitz(cov[:max_lag], cov[:p]) - sn ** 2 * np.eye(max_lag, p)
+    C_mat = toeplitz(cov[:max_lag], cov[:p]) - sn**2 * np.eye(max_lag, p)
     g = lstsq(C_mat, cov[1 : max_lag + 1])[0]
     if pad:
         res = np.zeros(pad)
@@ -1097,7 +1097,7 @@ def update_temporal_block(
     use_smooth=True,
     med_wd=None,
     concurrent=False,
-    **kwargs
+    **kwargs,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Update temporal components given residule traces of a group of cells.
@@ -1440,7 +1440,7 @@ def unit_merge(
     print("computing spatial overlap")
     with da.config.set(
         array_optimize=darr.optimization.optimize,
-        **{"optimization.fuse.subgraphs": False}
+        **{"optimization.fuse.subgraphs": False},
     ):
         A_sps = (A.data.map_blocks(sparse.COO) > 0).rechunk(-1).persist()
         A_inter = sparse.tril(
@@ -1514,8 +1514,8 @@ def label_connected(adj: np.ndarray, only_connected=False) -> np.ndarray:
         adj = np.triu(adj)
         g = nx.convert_matrix.from_numpy_matrix(adj)
     except:
-        g = nx.convert_matrix.from_scipy_sparse_matrix(adj)
-    labels = np.zeros(adj.shape[0], dtype=np.int)
+        g = nx.convert_matrix.from_scipy_sparse_array(adj)
+    labels = np.zeros(adj.shape[0], dtype=int)
     for icomp, comp in enumerate(nx.connected_components(g)):
         comp = list(comp)
         if only_connected and len(comp) == 1:

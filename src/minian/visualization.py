@@ -1665,20 +1665,16 @@ def visualize_preprocess(
     fh, fw = fm.sizes["height"], fm.sizes["width"]
     asp = fw / fh
     opts_im = {
-        "plot": {
-            "frame_width": 500,
-            "aspect": asp,
-            "title": "Image {label} {group} {dimensions}",
-        },
-        "style": {"cmap": "viridis"},
+        "frame_width": 500,
+        "aspect": asp,
+        "title": "Image {label} {group} {dimensions}",
+        "cmap": "viridis",
     }
     opts_cnt = {
-        "plot": {
-            "frame_width": 500,
-            "aspect": asp,
-            "title": "Contours {label} {group} {dimensions}",
-        },
-        "style": {"cmap": "viridis"},
+        "frame_width": 500,
+        "aspect": asp,
+        "title": "Contours {label} {group} {dimensions}",
+        "cmap": "viridis",
     }
 
     def _vis(f):
@@ -1752,17 +1748,17 @@ def visualize_seeds(
     h, w = max_proj.sizes["height"], max_proj.sizes["width"]
     asp = w / h
     pt_cmap = {True: "white", False: "red"}
-    opts_im = dict(plot=dict(frame_width=600, aspect=asp), style=dict(cmap="Viridis"))
-    opts_pts = dict(
-        plot=dict(
-            frame_width=600,
-            aspect=asp,
-            size_index="seeds",
-            color_index=mask,
-            tools=["hover"],
-        ),
-        style=dict(fill_alpha=0.8, line_alpha=0, cmap=pt_cmap),
-    )
+    opts_im = {"frame_width": 600, "aspect": asp, "cmap": "viridis"}
+    opts_pts = {
+        "frame_width": 600,
+        "aspect": asp,
+        "size_index": "seeds",
+        "color_index": mask,
+        "tools": ["hover"],
+        "fill_alpha": 0.8,
+        "line_alpha": 0,
+        "cmap": pt_cmap,
+    }
     if mask:
         vdims = ["seeds", mask]
     else:
@@ -1997,7 +1993,7 @@ def visualize_temporal_update(
         inputs = [dict(dummy=i) for i in inputs]
         A_dict = dict(dummy=A_dict)
     input_dict = {k: [i[k] for i in inputs] for k in inputs[0].keys()}
-    hv_YA, hv_C, hv_S, hv_sig, hv_C_pul, hv_S_pul, hv_A = [dict() for _ in range(7)]
+    hv_YA, hv_C, hv_S, hv_sig, hv_C_pul, hv_S_pul, hv_A = (dict() for _ in range(7))
     for k, ins in input_dict.items():
         if norm:
             ins[:-1] = [
@@ -2039,22 +2035,22 @@ def visualize_temporal_update(
             f_crd.min(),
             int(np.around(f_crd.min() + (f_crd.max() - f_crd.min()) / 2)),
         )
-        hv_S_pul[k], hv_C_pul[k] = [
+        hv_S_pul[k], hv_C_pul[k] = (
             (hv.Dataset(tr.rename("Response (A.U.)")).to(hv.Curve, kdims=["t"]))
             for tr in [s_pul, c_pul]
-        ]
+        )
         hv_YA[k] = hv.Dataset(ya.rename("Intensity (A.U.)")).to(
             hv.Curve, kdims=["frame"]
         )
         if c.sizes["unit_id"] > 0:
-            hv_C[k], hv_S[k], hv_sig[k] = [
+            hv_C[k], hv_S[k], hv_sig[k] = (
                 (
                     hv.Dataset(tr.rename("Intensity (A.U.)")).to(
                         hv.Curve, kdims=["frame"]
                     )
                 )
                 for tr in [c, s, sig]
-            ]
+            )
         hv_A[k] = hv.Dataset(A_dict[k].rename("A")).to(
             hv.Image, kdims=["width", "height"]
         )

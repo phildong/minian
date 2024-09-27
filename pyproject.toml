@@ -1,17 +1,91 @@
-[build-system]
-requires = [
-    "setuptools>=42",
-    "wheel"
-]
-build-backend = "setuptools.build_meta"
 [tool]
 [tool.commitizen]
 name = "cz_conventional_commits"
 version = "1.2.1"
 tag_format = "v$version"
 changelog_incremental = true
-version_files = [
-    "minian/__init__.py:__version__",
-    "setup.py:version",
-    "minian/install.py:VERSION"
+version_files = ["minian/__init__.py:__version__", "minian/install.py:VERSION"]
+[tool.pdm]
+distribution = true
+
+[tool.pdm.dev-dependencies]
+doc = [
+    "sphinx",
+    "pydata-sphinx-theme",
+    "sphinxcontrib-applehelp",
+    "sphinxcontrib-devhelp",
+    "sphinxcontrib-htmlhelp",
+    "sphinxcontrib-jsmath",
+    "sphinxcontrib-qthelp",
+    "sphinxcontrib-serializinghtml",
+    "beautifulsoup4",
+    "rtds-action",
+    "nbsphinx",
+    "docutils",
+    "m2r2",
+    "jinja2",
+    "markupsafe",
 ]
+test = ["click", "pytest", "pytest-cov", "pytest-rerunfailures", "coverage"]
+lint = ["black"]
+[project]
+name = "minian"
+version = "1.2.1"
+description = "MiniAn is an analysis pipeline and visualization tool inspired by both CaImAn and MIN1PIPE package specifically for Miniscope data."
+authors = [
+    { name = "phildong", email = "35715936+phildong@users.noreply.github.com" },
+    { name = "MiniAn Developers", email = "denisecailab@gmail.com" },
+]
+dependencies = [
+    "bokeh",
+    "cvxpy",
+    "dask[complete]",
+    "datashader",
+    "distributed",
+    "ecos",
+    "ffmpeg-python",
+    "holoviews",
+    "jupyter",
+    "matplotlib",
+    "medpy",
+    "natsort",
+    "netcdf4",
+    "networkx",
+    "numba",
+    "numpy",
+    "opencv-python",
+    "pandas",
+    "panel",
+    "pyfftw",
+    "pymetis",
+    "rechunker",
+    "scikit-image",
+    "scikit-learn",
+    "scipy",
+    "scs",
+    "simpleitk",
+    "sk-video",
+    "sparse",
+    "statsmodels",
+    "tifffile",
+    "xarray",
+    "zarr",
+]
+requires-python = ">=3.12"
+readme = "README.md"
+license = { text = "GNU" }
+classifiers = [
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+]
+
+[project.urls]
+Homepage = "https://github.com/DeniseCaiLab/minian"
+Documentation = "https://minian.readthedocs.io/"
+
+[project.scripts]
+minian-install = "minian.install:main"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"

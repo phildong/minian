@@ -42,7 +42,7 @@ def load_videos(
     downsample_strategy="subset",
     post_process: Optional[Callable] = None,
 ) -> xr.DataArray:
-    """
+    r"""
     Load multiple videos in a folder and return a `xr.DataArray`.
 
     Load videos from the folder specified in `vpath` and according to the regex
@@ -408,10 +408,8 @@ def open_minian_mf(
         nextdir = os.path.abspath(nextdir)
         cur_path = Path(nextdir)
         dir_tag = bool(
-            (
-                (any([Path(epath) in cur_path.parents for epath in sub_dirs]))
-                or nextdir in sub_dirs
-            )
+            (any([Path(epath) in cur_path.parents for epath in sub_dirs]))
+            or nextdir in sub_dirs
         )
         if exclude == dir_tag:
             continue
@@ -511,9 +509,7 @@ def save_minian(
     ds = var.to_dataset()
     if meta_dict is not None:
         pathlist = os.path.split(os.path.abspath(dpath))[0].split(os.sep)
-        ds = ds.assign_coords(
-            **dict([(dn, pathlist[di]) for dn, di in meta_dict.items()])
-        )
+        ds = ds.assign_coords(**{dn: pathlist[di] for dn, di in meta_dict.items()})
     md = {True: "a", False: "w-"}[overwrite]
     fp = os.path.join(dpath, var.name + ".zarr")
     if overwrite:
@@ -621,9 +617,7 @@ def update_meta(dpath, pattern=r"^minian\.nc$", meta_dict=None, backend="netcdf"
             new_ds.attrs = deepcopy(old_ds.attrs)
             old_ds.close()
             new_ds = new_ds.assign_coords(
-                **dict(
-                    [(cdname, pathlist[cdval]) for cdname, cdval in meta_dict.items()]
-                )
+                **{cdname: pathlist[cdval] for cdname, cdval in meta_dict.items()}
             )
             if backend == "netcdf":
                 new_ds.to_netcdf(f_path, mode="a")

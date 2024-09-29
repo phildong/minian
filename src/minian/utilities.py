@@ -110,7 +110,7 @@ def load_videos(
     file_extension = os.path.splitext(vlist[0])[1]
     if file_extension in (".avi", ".mkv"):
         movie_load_func = load_avi_lazy
-    elif file_extension == ".tif":
+    elif file_extension in (".tif", ".tiff"):
         movie_load_func = load_tif_lazy
     else:
         raise ValueError("Extension not supported.")

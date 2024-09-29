@@ -506,6 +506,10 @@ def save_minian(
     """
     dpath = os.path.normpath(dpath)
     Path(dpath).mkdir(parents=True, exist_ok=True)
+    if "chunks" in var.encoding:
+        del var.encoding["chunks"]
+    if "preferred_chunks" in var.encoding:
+        del var.encoding["preferred_chunks"]
     ds = var.to_dataset()
     if meta_dict is not None:
         pathlist = os.path.split(os.path.abspath(dpath))[0].split(os.sep)

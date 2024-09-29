@@ -858,7 +858,7 @@ def update_temporal(
     A, C, YrA = A.sel(unit_id=Ymask), C.sel(unit_id=Ymask), YrA.sel(unit_id=Ymask)
     print("grouping overlaping units")
     A_sps = (A.data.map_blocks(sparse.COO) > 0).compute().astype(np.float32)
-    A_inter = sparse.tensordot(A_sps, A_sps, axes=[(1, 2), (1, 2)])
+    A_inter = sparse.tensordot(A_sps, A_sps, axes=[(1, 2), (1, 2)]).todense()
     A_usum = np.tile(A_sps.sum(axis=(1, 2)).todense(), (A_sps.shape[0], 1))
     A_usum = A_usum + A_usum.T
     jac = scipy.sparse.csc_matrix(A_inter / (A_usum - A_inter) > jac_thres)

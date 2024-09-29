@@ -1451,6 +1451,11 @@ def unit_merge(
             ).compute(),
             k=-1,
         )
+    if A_inter.nnz == 0:
+        if add_list:
+            return A, C, add_list
+        else:
+            return A, C
     print("computing temporal correlation")
     nod_df = pd.DataFrame({"unit_id": A.coords["unit_id"].values})
     adj = adj_corr(C, A_inter, nod_df, freq=noise_freq)

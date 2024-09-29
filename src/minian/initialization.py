@@ -594,6 +594,9 @@ def seeds_merge(
     """
     print("computing distance")
     nng = radius_neighbors_graph(seeds[["height", "width"]], thres_dist)
+    if nng.nnz == 0:
+        seeds["mask_mrg"] = True
+        return seeds
     print("computing correlations")
     adj = adj_corr(varr, nng, seeds[["height", "width"]], noise_freq)
     print("merging seeds")

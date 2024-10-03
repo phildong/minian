@@ -86,6 +86,10 @@ Documentation = "https://minian.readthedocs.io/"
 [project.scripts]
 minian-install = "minian.install:main"
 
+[project.optional-dependencies]
+isx = [
+    "isx>=2.0.0",
+]
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"

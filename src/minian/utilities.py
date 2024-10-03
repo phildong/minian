@@ -33,6 +33,13 @@ from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import lsqr
 from tifffile import TiffFile, imread
 
+try:
+    from isx import Movie
+
+    HAS_ISX = True
+except ImportError:
+    HAS_ISX = False
+
 
 def load_videos(
     vpath: str,
@@ -112,6 +119,11 @@ def load_videos(
         movie_load_func = load_avi_lazy
     elif file_extension in (".tif", ".tiff"):
         movie_load_func = load_tif_lazy
+    elif file_extension == ".isxd":
+        if HAS_ISX:
+            movie_load_func = load_isxd_lazy
+        else:
+            raise ImportError("pyisx must be properly installed for isxd support")
     else:
         raise ValueError("Extension not supported.")
 
@@ -273,6 +285,45 @@ def load_avi_perframe(fname: str, fid: int) -> np.ndarray:
     else:
         print("frame read failed for frame {}".format(fid))
         return np.zeros((h, w))
+
+
+def load_isxd_lazy(fname: str, chunksize=100) -> darr.array:
+    """
+    Lazy load an avi video.
+
+    This function construct a single delayed task for loading the video as a
+    whole.
+
+    Parameters
+    ----------
+    fname : str
+        The filename of the video to load.
+
+    Returns
+    -------
+    arr : darr.array
+        The array representation of the video.
+    """
+    try:
+        mov = Movie.read(fname)
+    except:
+        raise ValueError(fname)
+    nfm = mov.timing.num_samples
+    h, w = mov.spacing.num_pixels
+    fidxs = np.array_split(np.arange(nfm), int(np.ceil(nfm / chunksize)))
+    fmread = da.delayed(load_isxd_chunk)
+    fms = [
+        da.array.from_delayed(
+            fmread(fname, fid), dtype=mov.data_type, shape=(len(fid), h, w)
+        )
+        for fid in fidxs
+    ]
+    return da.array.concatenate(fms, axis=0)
+
+
+def load_isxd_chunk(fname: str, fidx: np.array):
+    mov = Movie.read(fname)
+    return np.stack([mov.get_frame_data(int(f)) for f in fidx], axis=0)
 
 
 def open_minian(

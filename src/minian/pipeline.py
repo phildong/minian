@@ -1,13 +1,24 @@
+import io
 import os
 import shutil
+import traceback
+from contextlib import redirect_stdout
+from datetime import datetime
 
+import dask as da
 import dask.array as darr
 import holoviews as hv
 import numpy as np
+import pandas as pd
 import xarray as xr
+import yaml
+from bokeh.plotting import save as bk_savefig
+from bokeh.resources import CDN
+from distributed import LocalCluster
 from holoviews import opts
+from scipy.interpolate import interp1d
 
-from .cnmf import (
+from minian.cnmf import (
     compute_trace,
     get_noise_fft,
     unit_merge,
@@ -15,12 +26,12 @@ from .cnmf import (
     update_spatial,
     update_temporal,
 )
-from .initialization import initA, initC, pnr_refine, seeds_init, seeds_merge
-from .motion_correction import apply_transform, estimate_motion, resample_motion
-from .preprocessing import denoise, remove_background
-from .stripe_correction import label_good_frames, ripple_correction
-from .utilities import get_optimal_chk, load_videos, save_minian
-from .visualization import (
+from minian.initialization import initA, initC, pnr_refine, seeds_init, seeds_merge
+from minian.motion_correction import apply_transform, estimate_motion
+from minian.preprocessing import denoise, remove_background
+from minian.stripe_correction import label_good_frames, ripple_correction
+from minian.utilities import get_optimal_chk, load_videos, save_minian
+from minian.visualization import (
     generate_videos,
     plotA_contour,
     visualize_motion,
@@ -72,6 +83,12 @@ def minian_process(
             kwargs={"axis": 2},
             dask="allowed",
         )
+    subset = param.get("subset")
+    if subset is not None:
+        for d, sub in subset.items():
+            if isinstance(sub, tuple):
+                subset[d] = slice(*sub)
+    varr = varr.sel(subset)
     varr = save_minian(
         varr.chunk({"frame": chk["frame"], "height": -1, "width": -1}).rename("varr"),
         intpath,
@@ -82,12 +99,7 @@ def minian_process(
         varr = varr.sel(frame=good_frame)
     if param["ripple_corr"] is not None:
         varr = ripple_correction(varr, **param["ripple_corr"])
-    subset = param.get("subset")
-    if subset is not None:
-        for d, sub in subset.items():
-            if isinstance(sub, tuple):
-                subset[d] = slice(*sub)
-    varr_ref = varr.sel(subset)
+    varr_ref = varr
     # example frame
     smp_fm = np.random.choice(varr_ref.coords["frame"], 1000)
     exp_fm = varr_ref.sel(frame=smp_fm).max("frame").rename("exp_fm").compute()
@@ -436,3 +448,134 @@ def minian_process(
         ]
     )
     return result_ds, plots
+
+
+def resample_motion(motion, nsmp=None, f_org=None, f_new=None):
+    if f_org is None:
+        f_org = np.linspace(0, 1, motion.shape[0], endpoint=True)
+    if f_new is None:
+        f_new = np.linspace(0, 1, nsmp, endpoint=True)
+    motion_ret = np.zeros((len(f_new), 2))
+    for i in range(2):
+        motion_ret[:, i] = interp1d(
+            f_org, motion[:, i], bounds_error=False, fill_value="extrapolate"
+        )(f_new)
+    return motion_ret
+
+
+def minian_process_batch(
+    ss_csv: str,
+    id_cols: list = ["animal", "session"],
+    dat_col: str = "data",
+    param_col: str = None,
+    dat_path: str = "./data",
+    param_path: str = "./process/params",
+    out_path: str = "./intermediate/processed",
+    fig_path: str = "./figs/processed",
+    err_path: str = "./process/errs",
+    int_path: str = "./process/minian_int",
+    worker_path: str = "./process/dask-worker-space",
+    skip_existing: bool = True,
+    raise_err: bool = False,
+    cluster_kws: dict = dict(),
+):
+    # book-keeping
+    hv.extension("bokeh")
+    hv.config.image_rtol = 100
+    os.environ["PYTHONWARNINGS"] = "ignore"
+    os.environ["OMP_NUM_THREADS"] = "1"
+    os.environ["MKL_NUM_THREADS"] = "1"
+    os.environ["OPENBLAS_NUM_THREADS"] = "1"
+    os.environ["MINIAN_INTERMEDIATE"] = int_path
+    np.seterr(all="ignore")
+    da.config.set(
+        **{
+            "distributed.comm.timeouts.connect": "60s",
+            "distributed.comm.timeouts.tcp": "60s",
+        }
+    )
+    os.makedirs(out_path, exist_ok=True)
+    os.makedirs(fig_path, exist_ok=True)
+    os.makedirs(err_path, exist_ok=True)
+    os.makedirs(int_path, exist_ok=True)
+    # read session map
+    ssmap = pd.read_csv(ss_csv)
+    # process loop
+    for id_vars, ss_row in ssmap.set_index(id_cols).iterrows():
+        dp = ss_row[dat_col]
+        fname = "-".join(id_vars)
+        opath = os.path.join(out_path, "{}.nc".format(fname))
+        if skip_existing and os.path.exists(opath):
+            print("skipping {}".format(dp))
+            continue
+        else:
+            print("processing {}".format(dp))
+        # determine parameters
+        pfiles = ["generic.yaml"]
+        if param_col is not None and pd.notnull(ss_row[param_col]):
+            pfiles.extend(ss_row[param_col].split(";"))
+        param = dict()
+        for pf in pfiles:
+            with open(os.path.join(param_path, pf), "r") as yf:
+                p = yaml.full_load(yf)
+            param.update(p)
+        print("using params: {}".format(pfiles))
+        # start cluster
+        started = False
+        while not started:
+            try:
+                clst_kws = {
+                    "n_workers": 8,
+                    "memory_limit": "5GB",
+                    "resources": {"MEM": 1},
+                    "threads_per_worker": 2,
+                    "dashboard_address": "0.0.0.0:12345",
+                    "local_directory": worker_path,
+                }
+                clst_kws.update(cluster_kws)
+                cluster = LocalCluster(**clst_kws)
+                client = cluster.get_client()
+                started = True
+            except:
+                cluster.close()
+        # start process
+        shutil.rmtree(int_path, ignore_errors=True)
+        try:
+            tstart = datetime.now()
+            with redirect_stdout(io.StringIO()):
+                result_ds, plots = minian_process(
+                    dpath=os.path.join(dat_path, dp),
+                    intpath=int_path,
+                    param=param,
+                    video_path=os.path.join(out_path, "{}.mp4".format(fname)),
+                )
+            tend = datetime.now()
+            print("minian success: {}".format(dp))
+            print("time: {}".format(tend - tstart))
+        except Exception as err:
+            print("minian failed: {}".format(dp))
+            with open(os.path.join(err_path, "{}.log".format(fname)), "w") as txtf:
+                traceback.print_exception(None, err, err.__traceback__, file=txtf)
+            if raise_err:
+                raise err
+            client.close()
+            cluster.close()
+            continue
+        result_ds = (
+            result_ds.assign_coords({k: v for k, v in zip(id_cols, id_vars)})
+            .expand_dims(id_cols)
+            .compute()
+        )
+        result_ds.to_netcdf(
+            os.path.join(out_path, "{}.nc".format(fname)), format="NETCDF4"
+        )
+        for plt_name, plt in plots.items():
+            plt_name = "-".join([fname, plt_name])
+            bk_savefig(
+                hv.render(plt),
+                os.path.join(fig_path, "{}.html".format(plt_name)),
+                title=plt_name,
+                resources=CDN,
+            )
+        client.close()
+        cluster.close()
